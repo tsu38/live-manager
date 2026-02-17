@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SETLIST — ライブ管理</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --black: #0a0a0a;
+      --dark: #111111;
+      --card: #1a1a1a;
+      --border: #2a2a2a;
+      --accent: #e8ff00;
+      --accent2: #ff3c5f;
+      --text: #f0f0f0;
+      --muted: #666;
+      --upcoming: #e8ff00;
+      --done: #888;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--black);
+      color: var(--text);
+      font-family: 'Noto Sans JP', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ---- HEADER ---- */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      position: sticky;
+      top: 0;
+      background: var(--black);
+      z-index: 100;
+    }
+
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 4px;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .logo span {
+      color: var(--muted);
+      font-size: 11px;
+      font-family: 'Noto Sans JP', sans-serif;
+      letter-spacing: 2px;
+      display: block;
+      font-weight: 300;
+    }
+
+    .header-tabs {
+      display: flex;
+      gap: 0;
+    }
+
+    .tab-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 13px;
+      padding: 8px 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 1px;
+    }
+
+    .tab-btn:first-child { border-right: none; }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: var(--black);
+      border-color: var(--accent);
+      font-weight: 700;
+    }
+
+    .tab-btn:not(.active):hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ---- MAIN ---- */
+    main {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 32px 24px 80px;
+    }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* ---- ADD BUTTON ---- */
+    .add-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent);
+      color: var(--black);
+      border: none;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 10px 20px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      margin-bottom: 28px;
+      transition: opacity 0.2s;
+    }
+
+    .add-btn:hover { opacity: 0.85; }
+
+    /* ---- MODAL ---- */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .overlay.open { display: flex; }
+
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      width: 100%;
+      max-width: 520px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 32px;
+      position: relative;
+      animation: slideUp 0.25s ease;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 3px;
+      color: var(--accent);
+      margin-bottom: 24px;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 16px; right: 20px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 22px;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .close-btn:hover { color: var(--text); }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    input[type="url"],
+    textarea {
+      width: 100%;
+      background: var(--black);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 14px;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color 0.2s;
+      -webkit-appearance: none;
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1) brightness(0.6);
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--accent);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      justify-content: flex-end;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: var(--black);
+      border: none;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 10px 28px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: opacity 0.2s;
+    }
+
+    .btn-primary:hover { opacity: 0.85; }
+
+    .btn-cancel {
+      background: none;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 13px;
+      padding: 10px 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-cancel:hover {
+      border-color: var(--muted);
+      color: var(--text);
+    }
+
+    /* ---- LIVE CARD ---- */
+    .live-card {
+      border: 1px solid var(--border);
+      margin-bottom: 12px;
+      padding: 20px 24px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 0 20px;
+      align-items: start;
+      background: var(--card);
+      transition: border-color 0.2s;
+      cursor: pointer;
+    }
+
+    .live-card:hover { border-color: var(--accent); }
+
+    .live-card.done {
+      opacity: 0.55;
+    }
+
+    .live-date-block {
+      text-align: center;
+      min-width: 52px;
+    }
+
+    .live-date-month {
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .live-date-day {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      line-height: 1;
+      color: var(--accent);
+    }
+
+    .live-card.done .live-date-day {
+      color: var(--muted);
+    }
+
+    .live-date-year {
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .live-info {}
+
+    .live-artist {
+      font-weight: 700;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .live-venue {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .live-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      font-size: 10px;
+      letter-spacing: 1px;
+      padding: 3px 8px;
+      border: 1px solid;
+      text-transform: uppercase;
+    }
+
+    .badge-upcoming {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .badge-done {
+      color: var(--muted);
+      border-color: var(--muted);
+    }
+
+    .badge-setlist {
+      color: var(--accent2);
+      border-color: var(--accent2);
+    }
+
+    .live-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: flex-end;
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 16px;
+      padding: 4px;
+      transition: color 0.2s;
+      line-height: 1;
+    }
+
+    .icon-btn:hover { color: var(--accent); }
+    .icon-btn.delete:hover { color: var(--accent2); }
+
+    .checkin-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 11px;
+      padding: 5px 10px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .checkin-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(232,255,0,0.06);
+    }
+
+    .ticket-link {
+      font-size: 11px;
+      color: var(--accent);
+      text-decoration: none;
+      letter-spacing: 1px;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+
+    .ticket-link:hover { border-bottom-color: var(--accent); }
+
+    /* ---- SETLIST DETAIL (展開) ---- */
+    .setlist-expand {
+      display: none;
+      grid-column: 1 / -1;
+      border-top: 1px solid var(--border);
+      margin-top: 16px;
+      padding-top: 16px;
+    }
+
+    .setlist-expand.open { display: block; }
+
+    .setlist-label {
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .setlist-songs {
+      list-style: none;
+      counter-reset: song;
+    }
+
+    .setlist-songs li {
+      counter-increment: song;
+      font-size: 14px;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .setlist-songs li::before {
+      content: counter(song, decimal-leading-zero);
+      font-family: 'Bebas Neue', sans-serif;
+      color: var(--muted);
+      font-size: 12px;
+      min-width: 20px;
+    }
+
+    /* ---- EMPTY STATE ---- */
+    .empty {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--muted);
+    }
+
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.4;
+    }
+
+    .empty p {
+      font-size: 14px;
+      letter-spacing: 1px;
+    }
+
+    /* ---- SECTION HEADER ---- */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      letter-spacing: 4px;
+      color: var(--muted);
+    }
+
+    .count-badge {
+      background: var(--border);
+      color: var(--muted);
+      font-size: 11px;
+      padding: 2px 10px;
+      letter-spacing: 1px;
+    }
+
+    /* ---- RESPONSIVE ---- */
+    @media (max-width: 520px) {
+      header { padding: 0 16px; }
+      main { padding: 24px 16px 60px; }
+      .modal { padding: 24px 20px; }
+      .live-card { padding: 16px; grid-template-columns: auto 1fr auto; }
+      .logo span { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    SETLIST
+    <span>live manager</span>
+  </div>
+  <div class="header-tabs">
+    <button class="tab-btn active" onclick="switchTab('upcoming')">予定</button>
+    <button class="tab-btn" onclick="switchTab('archive')">記録</button>
+  </div>
+</header>
+
+<main>
+  <!-- 予定タブ -->
+  <div id="section-upcoming" class="section active">
+    <div class="section-header">
+      <div class="section-title">UPCOMING LIVES</div>
+      <span class="count-badge" id="upcoming-count">0</span>
+    </div>
+    <button class="add-btn" onclick="openModal('upcoming')">＋ ライブを追加</button>
+    <div id="upcoming-list"></div>
+  </div>
+
+  <!-- 記録タブ -->
+  <div id="section-archive" class="section">
+    <div class="section-header">
+      <div class="section-title">LIVE ARCHIVE</div>
+      <span class="count-badge" id="archive-count">0</span>
+    </div>
+    <button class="add-btn" onclick="openModal('archive')">＋ ライブを記録</button>
+    <div id="archive-list"></div>
+  </div>
+</main>
+
+<!-- モーダル：予定追加 -->
+<div class="overlay" id="modal-upcoming">
+  <div class="modal">
+    <div class="modal-title">UPCOMING LIVE</div>
+    <button class="close-btn" onclick="closeModal('upcoming')">×</button>
+    <div class="form-group">
+      <label>アーティスト名 *</label>
+      <input type="text" id="u-artist" placeholder="例：RADWIMPS">
+    </div>
+    <div class="form-group">
+      <label>日付 *</label>
+      <input type="date" id="u-date">
+    </div>
+    <div class="form-group">
+      <label>会場</label>
+      <input type="text" id="u-venue" placeholder="例：さいたまスーパーアリーナ">
+    </div>
+    <div class="form-group">
+      <label>チケットサイトのURL</label>
+      <input type="url" id="u-ticket" placeholder="https://...">
+    </div>
+    <div class="form-actions">
+      <button class="btn-cancel" onclick="closeModal('upcoming')">キャンセル</button>
+      <button class="btn-primary" onclick="saveUpcoming()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- モーダル：記録追加 -->
+<div class="overlay" id="modal-archive">
+  <div class="modal">
+    <div class="modal-title">LIVE RECORD</div>
+    <button class="close-btn" onclick="closeModal('archive')">×</button>
+    <div class="form-group">
+      <label>アーティスト名 *</label>
+      <input type="text" id="a-artist" placeholder="例：米津玄師">
+    </div>
+    <div class="form-group">
+      <label>日付 *</label>
+      <input type="date" id="a-date">
+    </div>
+    <div class="form-group">
+      <label>会場</label>
+      <input type="text" id="a-venue" placeholder="例：東京ドーム">
+    </div>
+    <div class="form-group">
+      <label>セットリスト（1行に1曲）</label>
+      <textarea id="a-setlist" placeholder="Lemon&#10;馬と鹿&#10;Pale Blue&#10;..."></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn-cancel" onclick="closeModal('archive')">キャンセル</button>
+      <button class="btn-primary" onclick="saveArchive()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- モーダル：参戦済み（予定→記録へ移動） -->
+<div class="overlay" id="modal-checkin">
+  <div class="modal">
+    <div class="modal-title">参戦済み！🎸</div>
+    <button class="close-btn" onclick="closeCheckin()">×</button>
+    <p style="font-size:13px; color:var(--muted); margin-bottom:20px; letter-spacing:0.5px;">セットリストを記録して、ライブを思い出に残そう</p>
+    <input type="hidden" id="c-id">
+    <div class="form-group">
+      <label>セットリスト（1行に1曲）</label>
+      <textarea id="c-setlist" placeholder="Lemon&#10;馬と鹿&#10;Pale Blue&#10;&#10;※空欄でもOK、後から追加できます"></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn-cancel" onclick="closeCheckin()">キャンセル</button>
+      <button class="btn-primary" onclick="confirmCheckin()">記録タブへ移動</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---- データ管理 ----
+  function loadData(key) {
+    try { return JSON.parse(localStorage.getItem(key)) || []; }
+    catch(e) { return []; }
+  }
+
+  function saveData(key, data) {
+    localStorage.setItem(key, JSON.stringify(data));
+  }
+
+  let upcomingData = loadData('setlist-upcoming');
+  let archiveData  = loadData('setlist-archive');
+
+  // ---- タブ切替 ----
+  function switchTab(tab) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('section-' + tab).classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      if (b.textContent.includes(tab === 'upcoming' ? '予定' : '記録')) b.classList.add('active');
+    });
+    render();
+  }
+
+  // ---- モーダル ----
+  function openModal(type) {
+    // 今日の日付をデフォルトに
+    const today = new Date().toISOString().split('T')[0];
+    if (type === 'upcoming') {
+      document.getElementById('u-date').value = today;
+    } else {
+      document.getElementById('a-date').value = today;
+    }
+    document.getElementById('modal-' + type).classList.add('open');
+  }
+
+  function closeModal(type) {
+    document.getElementById('modal-' + type).classList.remove('open');
+    clearForm(type);
+  }
+
+  function clearForm(type) {
+    if (type === 'upcoming') {
+      ['u-artist','u-date','u-venue','u-ticket'].forEach(id => document.getElementById(id).value = '');
+    } else {
+      ['a-artist','a-date','a-venue','a-setlist'].forEach(id => document.getElementById(id).value = '');
+    }
+  }
+
+  // オーバーレイ外クリックで閉じる
+  document.querySelectorAll('.overlay').forEach(el => {
+    el.addEventListener('click', e => {
+      if (e.target === el) {
+        const type = el.id.replace('modal-', '');
+        closeModal(type);
+      }
+    });
+  });
+
+  // ---- 保存 ----
+  function saveUpcoming() {
+    const artist = document.getElementById('u-artist').value.trim();
+    const date   = document.getElementById('u-date').value;
+    if (!artist || !date) { alert('アーティスト名と日付は必須です'); return; }
+
+    const item = {
+      id: Date.now(),
+      artist,
+      date,
+      venue:  document.getElementById('u-venue').value.trim(),
+      ticket: document.getElementById('u-ticket').value.trim(),
+    };
+    upcomingData.push(item);
+    upcomingData.sort((a, b) => a.date.localeCompare(b.date));
+    saveData('setlist-upcoming', upcomingData);
+    closeModal('upcoming');
+    render();
+  }
+
+  function saveArchive() {
+    const artist = document.getElementById('a-artist').value.trim();
+    const date   = document.getElementById('a-date').value;
+    if (!artist || !date) { alert('アーティスト名と日付は必須です'); return; }
+
+    const setlistRaw = document.getElementById('a-setlist').value.trim();
+    const setlist = setlistRaw ? setlistRaw.split('\n').map(s => s.trim()).filter(s => s) : [];
+
+    const item = {
+      id: Date.now(),
+      artist,
+      date,
+      venue:   document.getElementById('a-venue').value.trim(),
+      setlist,
+    };
+    archiveData.push(item);
+    archiveData.sort((a, b) => b.date.localeCompare(a.date));
+    saveData('setlist-archive', archiveData);
+    closeModal('archive');
+    render();
+  }
+
+  // ---- 参戦済み（予定→記録へ移動） ----
+  function openCheckin(id) {
+    document.getElementById('c-id').value = id;
+    document.getElementById('c-setlist').value = '';
+    document.getElementById('modal-checkin').classList.add('open');
+  }
+
+  function closeCheckin() {
+    document.getElementById('modal-checkin').classList.remove('open');
+  }
+
+  function confirmCheckin() {
+    const id   = parseInt(document.getElementById('c-id').value);
+    const item = upcomingData.find(i => i.id === id);
+    if (!item) return;
+
+    const setlistRaw = document.getElementById('c-setlist').value.trim();
+    const setlist = setlistRaw ? setlistRaw.split('\n').map(s => s.trim()).filter(s => s) : [];
+
+    // 記録タブに追加
+    const archived = {
+      id: Date.now(),
+      artist:  item.artist,
+      date:    item.date,
+      venue:   item.venue,
+      setlist,
+    };
+    archiveData.push(archived);
+    archiveData.sort((a, b) => b.date.localeCompare(a.date));
+    saveData('setlist-archive', archiveData);
+
+    // 予定タブから削除
+    upcomingData = upcomingData.filter(i => i.id !== id);
+    saveData('setlist-upcoming', upcomingData);
+
+    closeCheckin();
+
+    // 記録タブに切り替え
+    switchTab('archive');
+
+    // 移動したカードを一瞬ハイライト
+    setTimeout(() => {
+      const cards = document.querySelectorAll('#archive-list .live-card');
+      if (cards.length > 0) {
+        cards[0].style.borderColor = 'var(--accent)';
+        setTimeout(() => { cards[0].style.borderColor = ''; }, 1500);
+      }
+    }, 100);
+  }
+
+  // オーバーレイ外クリックで閉じる（checkin含む）
+  document.getElementById('modal-checkin').addEventListener('click', e => {
+    if (e.target === document.getElementById('modal-checkin')) closeCheckin();
+  });
+
+
+  function deleteItem(type, id) {
+    if (!confirm('削除しますか？')) return;
+    if (type === 'upcoming') {
+      upcomingData = upcomingData.filter(i => i.id !== id);
+      saveData('setlist-upcoming', upcomingData);
+    } else {
+      archiveData = archiveData.filter(i => i.id !== id);
+      saveData('setlist-archive', archiveData);
+    }
+    render();
+  }
+
+  // ---- セットリスト展開 ----
+  function toggleSetlist(id) {
+    const el = document.getElementById('setlist-' + id);
+    if (el) el.classList.toggle('open');
+  }
+
+  // ---- 日付フォーマット ----
+  function formatDate(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    return {
+      month: months[d.getMonth()],
+      day:   d.getDate(),
+      year:  d.getFullYear(),
+    };
+  }
+
+  function isPast(dateStr) {
+    const today = new Date().toISOString().split('T')[0];
+    return dateStr < today;
+  }
+
+  // ---- レンダリング ----
+  function render() {
+    renderUpcoming();
+    renderArchive();
+  }
+
+  function renderUpcoming() {
+    const list = document.getElementById('upcoming-list');
+    const count = document.getElementById('upcoming-count');
+    count.textContent = upcomingData.length;
+
+    if (upcomingData.length === 0) {
+      list.innerHTML = `<div class="empty"><div class="empty-icon">🎫</div><p>参戦予定のライブを追加しよう</p></div>`;
+      return;
+    }
+
+    list.innerHTML = upcomingData.map(item => {
+      const d    = formatDate(item.date);
+      const past = isPast(item.date);
+      return `
+        <div class="live-card ${past ? 'done' : ''}">
+          <div class="live-date-block">
+            <div class="live-date-month">${d.month}</div>
+            <div class="live-date-day">${d.day}</div>
+            <div class="live-date-year">${d.year}</div>
+          </div>
+          <div class="live-info">
+            <div class="live-artist">${esc(item.artist)}</div>
+            <div class="live-venue">${item.venue ? esc(item.venue) : '会場未定'}</div>
+            <div class="live-meta">
+              <span class="badge ${past ? 'badge-done' : 'badge-upcoming'}">${past ? 'PAST' : 'UPCOMING'}</span>
+            </div>
+            ${item.ticket ? `<div style="margin-top:10px"><a class="ticket-link" href="${esc(item.ticket)}" target="_blank" rel="noopener">🎟 チケットサイトを開く</a></div>` : ''}
+          </div>
+          <div class="live-actions">
+            <button class="checkin-btn" onclick="event.stopPropagation(); openCheckin(${item.id})" title="参戦済みにして記録へ移動">✓ 参戦済み</button>
+            <button class="icon-btn delete" onclick="event.stopPropagation(); deleteItem('upcoming', ${item.id})" title="削除">✕</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderArchive() {
+    const list  = document.getElementById('archive-list');
+    const count = document.getElementById('archive-count');
+    count.textContent = archiveData.length;
+
+    if (archiveData.length === 0) {
+      list.innerHTML = `<div class="empty"><div class="empty-icon">🎸</div><p>行ったライブのセトリを記録しよう</p></div>`;
+      return;
+    }
+
+    list.innerHTML = archiveData.map(item => {
+      const d = formatDate(item.date);
+      return `
+        <div class="live-card done" onclick="toggleSetlist(${item.id})">
+          <div class="live-date-block">
+            <div class="live-date-month">${d.month}</div>
+            <div class="live-date-day">${d.day}</div>
+            <div class="live-date-year">${d.year}</div>
+          </div>
+          <div class="live-info">
+            <div class="live-artist">${esc(item.artist)}</div>
+            <div class="live-venue">${item.venue ? esc(item.venue) : '―'}</div>
+            <div class="live-meta">
+              <span class="badge badge-done">ARCHIVE</span>
+              ${item.setlist.length > 0 ? `<span class="badge badge-setlist">${item.setlist.length} SONGS</span>` : ''}
+            </div>
+          </div>
+          <div class="live-actions">
+            <button class="icon-btn delete" onclick="event.stopPropagation(); deleteItem('archive', ${item.id})" title="削除">✕</button>
+          </div>
+          ${item.setlist.length > 0 ? `
+            <div class="setlist-expand" id="setlist-${item.id}">
+              <div class="setlist-label">SETLIST</div>
+              <ol class="setlist-songs">
+                ${item.setlist.map(s => `<li>${esc(s)}</li>`).join('')}
+              </ol>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  function esc(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ---- 初期描画 ----
+  render();
+</script>
+</body>
+</html>
